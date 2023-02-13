@@ -1,0 +1,369 @@
+---
+title: "Receiver Operating Characteristic (ROC)"
+author: "Serena Rosignoli"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: united
+    toc: yes
+  pdf_document:
+    toc: yes
+  html_notebook:
+    toc: yes
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## What is a ROC curve
+
+<font size="4"> **Performance measurement** for classification problem at various thresholds settings.
+
+Useful graphical tool to evaluate the performance of a **discrete classifier** as its discrimination threshold is varied. The task of the classifier is to classify the objects of a given collection into two groups/classes based on some features.
+
+* Signal detection theory
+* Diagnostic systems
+* Algorithms comparison </font>
+
+![ Confusion matrix/contingency table that shows the classifier's correct decisions on a major diagonal and the errors on the other](table.png)
+
+***
+
+False Positive is a type 1 error
+
+
+False Negative is a type 2 error
+
+
+***
+
+
+$True Positive Rate(TPR)/Recall/Sensitivity = \frac{TP}{TP+FN}$ 
+
+
+***
+
+
+$Specificity = \frac{TN}{TN+FP}$ 
+
+
+***
+
+
+$False Positive Rate(FPR) = 1-specificity = \frac{FP}{TN+FP}$ 
+
+
+***
+
+<font size="4"> 
+
+As the threshold value changes, a pair of TPR and FPR is computed in the graph.
+Conceptually the threshold must vary from -\(\infty\) to +\(\infty\).
+
+</font>
+
+![*Visualization of a step function computed with pairs of TPR ad FPR values at different thresholds (t1, t2, t3, ...)*](ROCspace.png)
+
+
+(Tharwat, Alaa (2018). Classification Assessment Methods: a detailed tutorial.)
+
+***
+
+<font size="4"> **Points in ROC space**
+
+(0,1) --> PERFECT classification
+
+
+
+Points on the diagonal --> RANDOM classification
+
+
+
+(0,0) --> NO ERRORS but NO TRUE POSITIVES
+
+
+
+(1,1) --> Unconditionally we are issuing POSITIVE classifications
+
+
+ </font>
+
+
+***
+
+![](curve.png)
+
+(https://glassboxmedicine.com/2019/02/23/measuring-performance-auc-auroc/)
+
+***
+
+## How to compare ROC curves
+
+
+<font size="4"> The **Area Under the Curve (AUC)** measures the two-dimensional area underneath the entire ROC curve, from (0,0) to (1,1). 
+
+* AUC measures the probability that a randomly chosen positive instance is ranked higher than a randomly chosen negative instance.
+
+* It can be measured to have a single and useful value as a representation of the ROC curve. 
+
+* These summarized statistics of ROC curves can be used to make inferences about the strength of the tests or statistical models.
+
+
+Perfect model -> $AUC = 1$
+
+
+Random model -> $AUC = 0.5$
+
+ </font>
+
+
+![Graphical representation of the computed AUC in the case of a perfect classifier **(a)** and in the case of a random one **(b)**](AUC.png)
+
+
+***
+
+<font size="4"> The distributions of the populations of interest, as the threshold value, have an influence in the classification outcome.
+
+
+Since Sensitivity and Specificity are inversely proportional to each other, an increase in Sensitivity (true predicted positive values) lead to a decrease in Specificity (true predicted negative values) and viceversa.
+
+</font>
+
+
+![*On the left we have the visualization of the overlap between the two populations distributions of interest. The population of negatives is highlighted in green, while the one of the positives is highlighted in red. The horizontal bar in the middle represents a threshold value. On the right the respective ROC curve is computed.* ](PDF.png) 
+
+(https://towardsdatascience.com/)
+
+
+***
+
+
+## Docking performance measurement
+
+<font size="4">
+
+
+**Docking** is a **structure-based virtual screening technique**, which make use of scoring functions to predict the affinity of interaction between two molecules.
+
+
+ROC curves in this field can be used to evaluate the ability of a docking protocol or a docking scoring function to retrieve actives compounds out of a set of inactives, thus it is an objective way to make decisions on whether to continue to invest in the evaluation of a molecule *in vivo* or not. 
+
+</font>
+
+***
+
+
+<font size="4"> **Benchmark** = Actives + Decoys/Inactives </font>
+
+![](scoring_function.svg)
+
+
+***
+
+## ROC curves in R with pROC package
+
+<font size="4"> An R package to display and analyze ROC curves.
+For further details, please refer to the main publication (DOI: 10.1186/1471-2105-12-77) and to the documentation (https://cran.r-project.org/web/packages/pROC/pROC.pdf)  </font>
+
+***
+Install the latest stable version from the CRAN
+```{r}
+install.packages("pROC")
+```
+***
+Load the library
+```{r}
+library("pROC")
+```
+***
+
+Read the data with the **read.table()** function. 
+Print to see how they are structured.
+```{r}
+data1 = read.table("3T3U.txt", header=T)
+data2 = read.table("3T3U_docked.txt", header=T)
+print(head(data1))
+print(head(data2))
+```
+
+
+***
+
+Create an object of class roc using the **roc()** function. 
+This is the main function of the pROC package. It builds a ROC curve and returns a “roc” object: a list of class “roc”.
+
+  *roc(response, predictor, ...)*: *response* is a factor, numeric or character vector of responses. *predictor* is a numeric or ordered vector of the same length than response, containing the predicted value of each observation.
+
+**par()** function can be used to set or query graphical parameters. The keyword *pty* specifies the type of plot region to be used; "s" generates a square plotting region and "m" generates the maximal plotting region.
+**coords()** function returns the coordinates of the ROC curve at the specified point. If "best" is provided in the argument, you get the best threshold value. 
+**grepl()** function searchs for matches of a string or string vector. It returns TRUE if a string contains the pattern, otherwise FALSE
+
+
+    Exercise:
+    
+    - Create a data frame with all the values of Sensitivity, False Positive Rate (1-Specificity) and threshold that have been computed for the roc object r1.
+    - Select only those with a Sensitivity higher than 0.7 and a Specificity lower than 0.8.
+    
+    Hints: 
+    See which information you can retrieve from the object: attributes(r1).
+
+***
+
+```{r}
+r1 = roc(grepl("active", data1$Title), data1$minimizedAffinity, plot = T)
+par(pty = "s")
+r2 = roc(grepl("active", data2$Title), data2$minimizedAffinity, plot=T, legacy.axes = T, ci=TRUE)
+
+bestcoord1 = coords(r1, "best", transpose=T)
+bestcoord2 = coords(r2, "best", transpose =T)
+bestcoord1
+bestcoord2
+
+cat((bestcoord1["specificity"])*100, "% of the real inactive molecules are classified as inactives\n")
+cat((bestcoord1["sensitivity"])*100, "% of the real active molecules are classified as actives\n")
+
+cat((bestcoord2["specificity"])*100, "% of the real inactive molecules are classified as inactives\n")
+cat((bestcoord2["sensitivity"])*100, "% of the real active molecules are classified as actives\n")
+#typeof(r1)
+#typeof(r2)
+#r1
+#r2
+```
+
+Create a object of class roc using the **plot.roc()** function.
+This function plots a ROC curve. 
+
+Other elements to add to the plot. 
+
+- **text()** function to add text to a plot. 
+- **paste()** function is used to concatenate strings
+- **format.pval()** returns formatted p-value
+
+Test our roc objects with the **roc.test()** function.
+This function compares two ROC curves.
+
+
+
+```{r}
+rocobj1 = roc(grepl("active",data1$Title),data1$minimizedAffinity, col="#1c61b6", legacy.axes = T, plot=T)
+par(new=T)
+rocobj2 = roc(grepl("active",data2$Title),data2$minimizedAffinity, col="#008600", legacy.axes = T, plot=T)
+
+testobj = roc.test(rocobj1, rocobj2)
+testobj
+
+text(0.8, 0.6, labels=paste("p-value =", format.pval(testobj$p.value)), adj=c(0, .5))
+legend("bottomright", legend=c("Scoring function 1", "Scoring function 2"), col=c("#1c61b6", "#008600"), lwd=2)
+
+```
+
+
+***
+
+Calculate the Area Under the Curve (AUC) with **auc()** function.
+
+* AUC of a ROC curve is a measure of accuracy and is equal to the probability that a randomly chosen active compound will be ranked higher than a randomly chosen inactive compound.
+
+* This function computes the numeric value of area under the ROC curve (AUC) with the trapezoidal rule (an approximation of the definite integral).
+
+* By default the total area under the curve is computed, but a partial AUC (pAUC) can be specified with the *partial.auc* key in which we set the range of Specificity values that we want to focus on (NB: The range of values is in terms of Specificity!).
+If a pAUC is defined, it can be standardized (corrected). This correction is controled by the *partial.auc.correct* argument.
+
+* AUC summarizes the entire ROC curve, including regions that frequently are not relevant (e.g., regions with low levels of specificity), thus often the **Partial AUC** is used, and it is calculated in a specified range of interest. 
+
+
+The **ci.auc** function computes computes the confidence interval (CI) of an area under the curve (AUC). By default, the 95% CI is computed with 2000 stratified bootstrap replicates.
+
+
+The **ci.se()** function computes the confidence interval (CI) of the sensitivity at the given specificity points. By default, the 95% CI are computed with 2000 stratified bootstrap replicates
+
+
+```{r}
+a1tot = auc(r1)
+a1 = auc (r1, partial.auc=c(1,.9), partial.auc.correct=T)
+a1tot
+a1
+a2tot = auc(r2)
+a2 = auc (r2, partial.auc=c(1,.9), partial.auc.correct=T)
+a2tot
+a2
+
+par(pty = "s")
+
+roc(grepl("active", data2$Title), data2$minimizedAffinity, plot=T, legacy.axes=T, col="#1c61b6", lwd=4, partial.auc=c(1,.9), partial.auc.correct=T, auc.polygon=T, auc.polygon.col="#1c61b622", max.auc.polygon=TRUE, max.auc.polygon.col="#1c61b622")
+
+roc(grepl("active", data2$Title), data2$minimizedAffinity, plot=T, legacy.axes=T, col="#1c61b6", lwd=4, add =T, type="n",  partial.auc=c(1,.9), partial.auc.correct=T, partial.auc.focus = "se", auc.polygon=T, auc.polygon.col="#008600", max.auc.polygon=TRUE, max.auc.polygon.col="#00860022")
+
+ci.auc(a1, method="bootstrap")
+ci.se(rocobj1)
+ci.se(rocobj1, bestcoord1["specificity"])
+
+```
+
+***
+
+**names()** function is a generic function to get or set the names of an object. 
+**sprintf()** returns a character vector containing a formatted combination of text and variable values.
+**cat()** concatenates and print.
+
+***
+
+```{r}
+#pdf(file="saving_plot4.pdf")
+
+a = colors()
+head(a)
+counter = 40
+colorlist = list()
+rarr = list()
+
+for (file in Sys.glob("*.txt")) {
+par(new=T)
+par(pty = "s")
+d = read.table(file, header=T)	
+r = roc(grepl("active", d$Title), d$minimizedAffinity, plot=T, col=a[counter], legacy.axes = T)
+rarr[[length(rarr)+1]]=r
+colorlist[[length(colorlist)+1]]= a[counter]
+counter = counter + 1
+}
+
+names(rarr) = Sys.glob("*.txt")
+for (n in names(rarr)) {
+r = rarr [[n]]
+a = auc (r, partial.auc=c(1,.9), partial.auc.correct=T)
+s = sprintf ("%s %.4f %.4f \n", sub(".txt","",n), r$auc[1], a[1])
+cat (s)
+}
+
+v = vector("numeric",length = length(rarr))
+counter = 1
+for(i in names(rarr)) {
+  v[counter] = sub(".txt", "", i)
+  counter = counter + 1
+}
+
+v2 = vector("numeric",length = length(rarr))
+counter = 1
+for(i in colorlist) {
+  v2[counter] = i
+  counter = counter + 1
+}
+
+legend("bottomright", legend=v, col=v2, lwd=2)
+
+#dev.off()
+```
+
+
+***
+
+
+[1] An introduction to ROC analysis, Tom Fawcett (2005)
+
+[2] Koes DR, Baumgartner MP, Camacho CJ. Lessons learned in empirical scoring with
+smina from the CSAR 2011 benchmarking exercise. J Chem Inf Model. 2013 Aug
+doi: 10.1021/ci300604z. 
+
+[3] Virtual Screening Workflow Development Guided by the “Receiver Operating
+Characteristic” Curve Approach. Application to High-Throughput Docking on
+Metabotropic Glutamate Receptor Subtype 4, Nicolas Triballeau (2004)
